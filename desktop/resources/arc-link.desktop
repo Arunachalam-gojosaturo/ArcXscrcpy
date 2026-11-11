@@ -1,0 +1,20 @@
+[Desktop Entry]
+Name=ARC-LINK
+Comment=Autonomous Wireless ADB & scrcpy Bridge for Android Screen Recovery
+GenericName=Screen Mirroring & Wireless ADB
+Exec=arc-link %u
+Icon=arc-link
+Terminal=false
+Type=Application
+Categories=Utility;System;RemoteAccess;Development;
+StartupWMClass=arc-link
+Keywords=adb;scrcpy;wireless;android;screen;remote;
+Actions=Connect;Scrcpy;
+
+[Desktop Action Connect]
+Name=Connect Phone
+Exec=arc-link
+
+[Desktop Action Scrcpy]
+Name=Launch Scrcpy Mirror
+Exec=arc-link

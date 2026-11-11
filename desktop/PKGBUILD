@@ -1,0 +1,54 @@
+# Maintainer: ARC-LINK Team <contact@arcx.link>
+pkgname=arc-link
+pkgver=1.0.0
+pkgrel=1
+pkgdesc="Autonomous Wireless ADB & scrcpy Screen Recovery Bridge for Broken Android Displays"
+arch=('any')
+url="https://github.com/arcx/arc-link"
+license=('Apache-2.0')
+depends=(
+    'python>=3.10'
+    'python-pyqt6'
+    'android-tools'
+    'scrcpy'
+    'python-scapy'
+    'libnotify'
+    'polkit'
+)
+makedepends=(
+    'python-setuptools'
+)
+source=()
+sha256sums=()
+
+build() {
+    cd "$startdir"
+    python setup.py build
+}
+
+package() {
+    cd "$startdir"
+
+    # 1. Install Python package via setuptools
+    python setup.py install --root="$pkgdir" --optimize=1 --skip-build
+
+    # 2. Install privileged sniffer helper to /usr/lib/arc-link/
+    install -d "$pkgdir/usr/lib/arc-link"
+    install -m 755 arc_link/core/sniffer_helper.py "$pkgdir/usr/lib/arc-link/arc-link-sniffer"
+
+    # 3. Install polkit policy
+    install -d "$pkgdir/usr/share/polkit-1/actions"
+    install -m 644 resources/org.arclink.sniffer.policy "$pkgdir/usr/share/polkit-1/actions/"
+
+    # 4. Install Desktop application shortcut
+    install -d "$pkgdir/usr/share/applications"
+    install -m 644 resources/arc-link.desktop "$pkgdir/usr/share/applications/"
+
+    # 5. Install Scalable SVG Icon
+    install -d "$pkgdir/usr/share/icons/hicolor/scalable/apps"
+    install -m 644 resources/icons/arc-link.svg "$pkgdir/usr/share/icons/hicolor/scalable/apps/arc-link.svg"
+
+    # 6. Install systemd user service
+    install -d "$pkgdir/usr/lib/systemd/user"
+    install -m 644 resources/arc-link.service "$pkgdir/usr/lib/systemd/user/arc-link.service"
+}

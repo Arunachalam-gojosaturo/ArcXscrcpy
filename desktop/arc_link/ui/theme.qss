@@ -1,0 +1,269 @@
+/* ARC-LINK Cyber-HUD Neon Glass Stylesheet */
+
+/* Global Window & Fonts */
+QMainWindow, QDialog {
+    background: #070A12;
+    color: #F0F6FC;
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+}
+
+QWidget {
+    color: #F0F6FC;
+}
+
+/* Glass Panels */
+QFrame[class="glass-panel"], QWidget[class="glass-panel"] {
+    background-color: rgba(17, 24, 39, 0.70);
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    border-radius: 14px;
+}
+
+/* Primary Action Buttons */
+QPushButton {
+    background-color: rgba(255, 255, 255, 0.06);
+    color: #F0F6FC;
+    border: 1px solid rgba(255, 255, 255, 0.14);
+    border-radius: 10px;
+    padding: 8px 18px;
+    font-size: 13px;
+    font-weight: 600;
+}
+
+QPushButton:hover {
+    background-color: rgba(0, 229, 255, 0.12);
+    border: 1px solid #00E5FF;
+    color: #00E5FF;
+}
+
+QPushButton:pressed {
+    background-color: rgba(0, 229, 255, 0.22);
+    border: 1px solid #00E5FF;
+}
+
+QPushButton:disabled {
+    background-color: rgba(255, 255, 255, 0.02);
+    border-color: rgba(255, 255, 255, 0.05);
+    color: #484F58;
+}
+
+/* Cyber Accent Buttons */
+QPushButton#btn_connect {
+    background-color: qlineargradient(x1:0, y1:0, x2:1, y2:1, stop:0 #00E5FF, stop:1 #0099B8);
+    color: #070A12;
+    border: none;
+    border-radius: 12px;
+    font-family: 'Orbitron', 'Inter', sans-serif;
+    font-size: 14px;
+    font-weight: 800;
+    padding: 12px 28px;
+}
+
+QPushButton#btn_connect:hover {
+    background-color: qlineargradient(x1:0, y1:0, x2:1, y2:1, stop:0 #33EBFF, stop:1 #00B4D8);
+}
+
+QPushButton#btn_connect:disabled {
+    background-color: rgba(255, 255, 255, 0.05);
+    color: #484F58;
+}
+
+QPushButton#btn_disconnect {
+    background-color: rgba(255, 59, 92, 0.12);
+    color: #FF3B5C;
+    border: 1px solid rgba(255, 59, 92, 0.60);
+    border-radius: 12px;
+    font-family: 'Orbitron', 'Inter', sans-serif;
+    font-size: 14px;
+    font-weight: 800;
+    padding: 12px 28px;
+}
+
+QPushButton#btn_disconnect:hover {
+    background-color: rgba(255, 59, 92, 0.28);
+    border: 1px solid #FF3B5C;
+}
+
+QPushButton#btn_disconnect:disabled {
+    background-color: rgba(255, 255, 255, 0.03);
+    border-color: rgba(255, 255, 255, 0.06);
+    color: #484F58;
+}
+
+/* Tab Widget (Cyber Glass style) */
+QTabWidget::pane {
+    background: rgba(13, 18, 36, 0.65);
+    border: 1px solid rgba(255, 255, 255, 0.10);
+    border-radius: 12px;
+    top: -1px;
+    padding: 8px;
+}
+
+QTabBar::tab {
+    background: transparent;
+    color: #8B949E;
+    border: 1px solid transparent;
+    border-bottom: 2px solid transparent;
+    padding: 8px 20px;
+    font-family: 'Orbitron', 'Inter', sans-serif;
+    font-weight: 600;
+    font-size: 12px;
+    margin-right: 4px;
+}
+
+QTabBar::tab:hover {
+    color: #00E5FF;
+}
+
+QTabBar::tab:selected {
+    color: #00E5FF;
+    border-bottom: 2px solid #00E5FF;
+    background: rgba(0, 229, 255, 0.08);
+    border-top-left-radius: 6px;
+    border-top-right-radius: 6px;
+}
+
+/* Inputs & Editors */
+QLineEdit, QTextEdit, QPlainTextEdit, QSpinBox, QComboBox {
+    background: rgba(13, 18, 36, 0.90);
+    color: #F0F6FC;
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    border-radius: 8px;
+    padding: 8px 12px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 13px;
+    selection-background-color: rgba(0, 229, 255, 0.35);
+}
+
+QLineEdit:focus, QTextEdit:focus, QPlainTextEdit:focus, QSpinBox:focus, QComboBox:focus {
+    border: 1px solid #00E5FF;
+}
+
+/* Table Widget */
+QTableWidget {
+    background-color: #070A12;
+    border: 1px solid rgba(255, 255, 255, 0.10);
+    border-radius: 8px;
+    gridline-color: transparent;
+    alternate-background-color: rgba(255, 255, 255, 0.02);
+}
+
+QTableWidget::item {
+    padding: 6px 10px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+}
+
+QTableWidget::item:selected {
+    background-color: rgba(0, 229, 255, 0.18);
+    color: #F0F6FC;
+}
+
+QHeaderView::section {
+    background-color: #0D1224;
+    color: #8B949E;
+    font-family: 'Orbitron', 'Inter', sans-serif;
+    font-size: 11px;
+    font-weight: 700;
+    padding: 8px 10px;
+    border: none;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.12);
+}
+
+/* Scrollbars */
+QScrollBar:vertical {
+    border: none;
+    background: rgba(7, 10, 18, 0.6);
+    width: 8px;
+    margin: 0px;
+    border-radius: 4px;
+}
+
+QScrollBar::handle:vertical {
+    background: rgba(255, 255, 255, 0.18);
+    min-height: 24px;
+    border-radius: 4px;
+}
+
+QScrollBar::handle:vertical:hover {
+    background: #00E5FF;
+}
+
+QScrollBar::add-line:vertical, QScrollBar::sub-line:vertical {
+    height: 0px;
+}
+
+QScrollBar:horizontal {
+    border: none;
+    background: rgba(7, 10, 18, 0.6);
+    height: 8px;
+    margin: 0px;
+    border-radius: 4px;
+}
+
+QScrollBar::handle:horizontal {
+    background: rgba(255, 255, 255, 0.18);
+    min-width: 24px;
+    border-radius: 4px;
+}
+
+QScrollBar::handle:horizontal:hover {
+    background: #00E5FF;
+}
+
+QScrollBar::add-line:horizontal, QScrollBar::sub-line:horizontal {
+    width: 0px;
+}
+
+/* CheckBoxes */
+QCheckBox {
+    spacing: 8px;
+    font-size: 13px;
+    color: #F0F6FC;
+}
+
+QCheckBox::indicator {
+    width: 18px;
+    height: 18px;
+    border-radius: 4px;
+    border: 1px solid rgba(255, 255, 255, 0.20);
+    background: rgba(13, 18, 36, 0.8);
+}
+
+QCheckBox::indicator:hover {
+    border-color: #00E5FF;
+}
+
+QCheckBox::indicator:checked {
+    background-color: #00E5FF;
+    border-color: #00E5FF;
+    image: none;
+}
+
+/* Menus */
+QMenu {
+    background-color: #0D1224;
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    border-radius: 8px;
+    padding: 6px;
+}
+
+QMenu::item {
+    padding: 6px 20px;
+    border-radius: 4px;
+    color: #F0F6FC;
+}
+
+QMenu::item:selected {
+    background-color: rgba(0, 229, 255, 0.18);
+    color: #00E5FF;
+}
+
+/* Tooltips */
+QToolTip {
+    background-color: #0D1224;
+    color: #00E5FF;
+    border: 1px solid rgba(0, 229, 255, 0.4);
+    border-radius: 6px;
+    padding: 6px 10px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+}

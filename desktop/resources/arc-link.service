@@ -1,0 +1,14 @@
+[Unit]
+Description=ARC-LINK Wireless ADB & Scrcpy Screen Recovery Bridge
+After=graphical-session.target network.target
+PartOf=graphical-session.target
+
+[Service]
+Type=simple
+ExecStart=/usr/bin/arc-link --minimized
+Restart=on-failure
+RestartSec=5s
+Environment=QT_QPA_PLATFORMTHEME=qt6ct
+
+[Install]
+WantedBy=graphical-session.target
