@@ -26,6 +26,12 @@ class ScrcpyRunner(QObject):
     Supervises the scrcpy background process.
     Provides graceful termination and state broadcasting.
     """
+    # Signals expected by main_window.py
+    process_started = pyqtSignal()
+    process_finished = pyqtSignal(int)
+    error_occurred = pyqtSignal(str)
+
+    # Legacy / alias signals
     started = pyqtSignal(str)   # mode name
     stopped = pyqtSignal()
     error = pyqtSignal(str)     # error message
@@ -44,44 +50,32 @@ class ScrcpyRunner(QObject):
     def active_mode(self) -> str:
         return self._active_mode
 
-    def start(
+    def launch(
         self,
         endpoint: str,
-        screen_off: bool = False,
-        preset: str = "standard",
-        custom_flags: Optional[List[str]] = None,
+        flags: Optional[List[str]] = None,
+        turn_screen_off: bool = False,
     ) -> bool:
         """
-        Spawns scrcpy for the target endpoint.
-        If already running, stops current instance first.
+        Launches scrcpy targeting endpoint with custom flags and screen-off toggle.
         """
         if self.is_running:
             self.stop()
 
         self._active_endpoint = endpoint
-        self._active_mode = "SCREEN_OFF" if screen_off else "NORMAL"
+        self._active_mode = "SCREEN_OFF" if turn_screen_off else "NORMAL"
 
         args = ["-s", endpoint]
 
-        # Apply preset
-        if preset == "low_latency":
-            args.extend(ScrcpyPreset.LOW_LATENCY)
-        elif preset == "high_quality":
-            args.extend(ScrcpyPreset.HIGH_QUALITY)
-        elif preset == "audio_only":
-            args.extend(ScrcpyPreset.AUDIO_ONLY)
-        else:
-            args.extend(ScrcpyPreset.STANDARD)
-
-        # Screen-off mirror parameters
-        if screen_off:
-            args.extend(["--turn-screen-off", "--stay-awake", "--power-off-on-close"])
-
-        # Add custom extra flags
-        if custom_flags:
-            for flag in custom_flags:
+        if flags:
+            for flag in flags:
                 if flag not in args:
                     args.append(flag)
+
+        if turn_screen_off:
+            for opt in ["--turn-screen-off", "--stay-awake", "--power-off-on-close"]:
+                if opt not in args:
+                    args.append(opt)
 
         self._process = QProcess(self)
         self._process.setProgram("scrcpy")
@@ -93,6 +87,33 @@ class ScrcpyRunner(QObject):
 
         self._process.start()
         return True
+
+    def start(
+        self,
+        endpoint: str,
+        screen_off: bool = False,
+        preset: str = "standard",
+        custom_flags: Optional[List[str]] = None,
+    ) -> bool:
+        """
+        Spawns scrcpy for the target endpoint using presets.
+        """
+        flags: List[str] = []
+        if preset == "low_latency":
+            flags.extend(ScrcpyPreset.LOW_LATENCY)
+        elif preset == "high_quality":
+            flags.extend(ScrcpyPreset.HIGH_QUALITY)
+        elif preset == "audio_only":
+            flags.extend(ScrcpyPreset.AUDIO_ONLY)
+        else:
+            flags.extend(ScrcpyPreset.STANDARD)
+
+        if custom_flags:
+            for flag in custom_flags:
+                if flag not in flags:
+                    flags.append(flag)
+
+        return self.launch(endpoint, flags=flags, turn_screen_off=screen_off)
 
     def stop(self) -> None:
         """Kills the active scrcpy instance cleanly."""
@@ -116,11 +137,13 @@ class ScrcpyRunner(QObject):
 
     def _on_started(self) -> None:
         self.started.emit(self._active_mode)
+        self.process_started.emit()
 
     def _on_finished(self, exit_code: int, exit_status: QProcess.ExitStatus) -> None:
         self._process = None
         self._active_mode = ""
         self.stopped.emit()
+        self.process_finished.emit(exit_code)
 
     def _on_error(self, err: QProcess.ProcessError) -> None:
         err_msg = f"scrcpy process error ({err})"
@@ -129,3 +152,4 @@ class ScrcpyRunner(QObject):
             if stderr:
                 err_msg += f": {stderr.strip()}"
         self.error.emit(err_msg)
+        self.error_occurred.emit(err_msg)

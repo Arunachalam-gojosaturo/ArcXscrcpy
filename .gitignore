@@ -49,3 +49,9 @@ Thumbs.db
 
 # Arc-Link runtime socket
 arc-link-single-instance-sock*
+
+# Arch Linux packaging artifacts
+*.pkg.tar.*
+pkg/
+src/
+
