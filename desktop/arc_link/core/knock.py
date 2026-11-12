@@ -38,9 +38,10 @@ class KnockResult:
     hotspot: bool
     battery: int
     raw_payload: str = ""
+    responder_ip: str = ""
 
     @classmethod
-    def from_dict(cls, data: Dict[str, Any], raw: str = "") -> KnockResult:
+    def from_dict(cls, data: Dict[str, Any], raw: str = "", responder_ip: str = "") -> KnockResult:
         return cls(
             device_name=str(data.get("device_name", data.get("model", "Android Device"))),
             model=str(data.get("model", "Unknown")),
@@ -50,10 +51,11 @@ class KnockResult:
             hotspot=bool(data.get("hotspot", True)),
             battery=int(data.get("battery", -1)),
             raw_payload=raw,
+            responder_ip=responder_ip or str(data.get("responder_ip", "")),
         )
 
     @classmethod
-    def from_json(cls, raw: str) -> KnockResult:
+    def from_json(cls, raw: str, responder_ip: str = "") -> KnockResult:
         try:
             data = json.loads(raw)
         except json.JSONDecodeError as e:
@@ -64,7 +66,7 @@ class KnockResult:
         if missing:
             raise KnockInvalidResponseError(f"Missing required keys in reply: {missing}")
 
-        return cls.from_dict(data, raw=raw)
+        return cls.from_dict(data, raw=raw, responder_ip=responder_ip)
 
 
 # Alias KnockReply to KnockResult
@@ -93,9 +95,10 @@ def send_knock(
         sock.settimeout(timeout)
         try:
             sock.sendto(message, (gateway_ip, port))
-            data, _ = sock.recvfrom(4096)
+            data, addr = sock.recvfrom(4096)
             decoded = data.decode("utf-8", errors="replace").strip()
-            return KnockResult.from_json(decoded)
+            responder = addr[0] if addr else gateway_ip
+            return KnockResult.from_json(decoded, responder_ip=responder)
         except socket.timeout:
             last_error = KnockTimeoutError(
                 f"Knock timed out after {timeout}s on {gateway_ip}:{port} (attempt {attempt + 1}/{retries + 1})"

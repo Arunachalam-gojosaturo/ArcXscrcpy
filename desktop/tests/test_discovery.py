@@ -58,6 +58,28 @@ class TestDiscoveryEngine(unittest.TestCase):
         is_open = self.engine._check_tcp_port("192.168.43.1", 5555)
         self.assertFalse(is_open)
 
+    @patch("arc_link.core.discovery.KnockClient")
+    def test_knock_discovery_prefers_responder_ip(self, mock_knock_client_cls):
+        from arc_link.core.knock import KnockResult
+        mock_client = MagicMock()
+        mock_knock_client_cls.return_value = mock_client
+        mock_client.knock.return_value = KnockResult(
+            device_name="Nubia REDMAGIC 10 Pro",
+            model="V2151",
+            ip="192.168.43.1",  # Phone payload reported fallback 192.168.43.1
+            adb_port=5555,
+            adb_wifi_enabled=True,
+            hotspot=True,
+            battery=89,
+            responder_ip="10.170.47.96",  # Actual socket responder IP
+        )
+
+        target = self.engine.discover("10.170.47.96", self.config)
+        self.assertIsNotNone(target)
+        self.assertEqual(target.ip, "10.170.47.96")
+        self.assertEqual(target.port, 5555)
+        self.assertEqual(target.endpoint, "10.170.47.96:5555")
+
 
 if __name__ == "__main__":
     unittest.main()

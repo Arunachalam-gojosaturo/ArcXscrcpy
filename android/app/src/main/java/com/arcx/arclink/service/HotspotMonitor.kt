@@ -37,7 +37,9 @@ class HotspotMonitor(
         private const val WIFI_AP_STATE_ENABLED = 13
         private const val WIFI_AP_STATE_DISABLED = 11
 
-        private val AP_INTERFACE_PREFIXES = listOf("ap", "wlan1", "swlan", "softap", "wigig")
+        private val PRIMARY_AP_PREFIXES = listOf("ap", "softap", "swlan", "wlan2", "wlan1", "wigig", "tether")
+        private val SECONDARY_AP_PREFIXES = listOf("wlan", "rndis", "ncm")
+        private val EXCLUDED_IFACE_PREFIXES = listOf("lo", "dummy", "rmnet", "r_rmnet", "ccmni", "p2p", "wifi-aware", "tun", "sit", "ip6", "gre")
     }
 
     private val _hotspotState = MutableStateFlow(HotspotState())
@@ -133,24 +135,59 @@ class HotspotMonitor(
 
     private fun findActiveApInterface(): Pair<String, String> {
         try {
-            val interfaces = NetworkInterface.getNetworkInterfaces() ?: return Pair("", "")
-            for (iface in interfaces) {
-                if (!iface.isUp || iface.isLoopback) continue
+            val interfaces = NetworkInterface.getNetworkInterfaces()?.toList() ?: return Pair("", "")
 
-                val name = iface.name.lowercase()
-                val isApName = AP_INTERFACE_PREFIXES.any { name.startsWith(it) }
-
-                if (isApName) {
-                    for (addr in iface.inetAddresses) {
-                        if (addr is Inet4Address && !addr.isLoopbackAddress) {
-                            return Pair(iface.name, addr.hostAddress ?: "")
+            // Pass 1: Look for primary hotspot/AP interfaces (ap, softap, swlan, wlan2, wlan1, etc.)
+            for (prefix in PRIMARY_AP_PREFIXES) {
+                for (iface in interfaces) {
+                    if (!iface.isUp || iface.isLoopback) continue
+                    if (iface.name.lowercase().startsWith(prefix)) {
+                        val ipv4 = getFirstIpv4(iface)
+                        if (ipv4.isNotEmpty()) {
+                            return Pair(iface.name, ipv4)
                         }
                     }
+                }
+            }
+
+            // Pass 2: Look for secondary interfaces (wlan, rndis, ncm)
+            for (prefix in SECONDARY_AP_PREFIXES) {
+                for (iface in interfaces) {
+                    if (!iface.isUp || iface.isLoopback) continue
+                    if (iface.name.lowercase().startsWith(prefix)) {
+                        val ipv4 = getFirstIpv4(iface)
+                        if (ipv4.isNotEmpty()) {
+                            return Pair(iface.name, ipv4)
+                        }
+                    }
+                }
+            }
+
+            // Pass 3: Any non-cellular, non-loopback interface that is UP and has an IPv4
+            for (iface in interfaces) {
+                if (!iface.isUp || iface.isLoopback) continue
+                val name = iface.name.lowercase()
+                if (EXCLUDED_IFACE_PREFIXES.any { name.startsWith(it) }) continue
+                val ipv4 = getFirstIpv4(iface)
+                if (ipv4.isNotEmpty()) {
+                    return Pair(iface.name, ipv4)
                 }
             }
         } catch (e: Exception) {
             Log.w(TAG, "NetworkInterface query error: ${e.message}")
         }
         return Pair("", "")
+    }
+
+    private fun getFirstIpv4(iface: NetworkInterface): String {
+        for (addr in iface.inetAddresses) {
+            if (addr is Inet4Address && !addr.isLoopbackAddress) {
+                val host = addr.hostAddress ?: ""
+                if (host.isNotEmpty() && !host.startsWith("127.")) {
+                    return host
+                }
+            }
+        }
+        return ""
     }
 }

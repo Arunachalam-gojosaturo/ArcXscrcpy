@@ -30,4 +30,18 @@ class HotspotDetectorTest {
         assertEquals("192.168.43.1", state.ipAddress)
         assertTrue(state.detectionSource.contains("ap0"))
     }
+
+    @Test
+    fun testHotspotWlan2State() {
+        val state = HotspotState(
+            isEnabled = true,
+            interfaceName = "wlan2",
+            ipAddress = "10.170.47.96",
+            detectionSource = "INTERFACE (wlan2)"
+        )
+        assertTrue(state.isEnabled)
+        assertEquals("wlan2", state.interfaceName)
+        assertEquals("10.170.47.96", state.ipAddress)
+        assertTrue(state.detectionSource.contains("wlan2"))
+    }
 }

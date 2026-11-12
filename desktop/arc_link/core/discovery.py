@@ -66,8 +66,22 @@ class DiscoveryEngine:
                         f"Knock acknowledged by {reply.device_name} ({reply.model}). Target port: {reply.adb_port}",
                         "SUCCESS",
                     )
+                    # Determine target IP address:
+                    # Prefer responder_ip (the network address from which the UDP reply actually arrived)
+                    # or gateway_ip over payload reply.ip, because the host has proven network reachability to it.
+                    target_ip = reply.responder_ip or gateway_ip
+                    if not target_ip or target_ip == "0.0.0.0":
+                        target_ip = reply.ip or gateway_ip
+
+                    if reply.ip and reply.ip != target_ip:
+                        self.log(
+                            f"Knock reply payload IP '{reply.ip}' differs from active responder '{target_ip}'. "
+                            f"Routing to responsive endpoint {target_ip}:{reply.adb_port}.",
+                            "INFO",
+                        )
+
                     return DiscoveredTarget(
-                        ip=reply.ip or gateway_ip,
+                        ip=target_ip,
                         port=reply.adb_port,
                         source="KNOCK",
                         device_name=reply.device_name,
@@ -236,6 +250,24 @@ class DeviceDiscoveryWorker(QThread):
                     "battery_level": target.battery,
                 }
                 self.endpoint_found.emit(endpoint, details)
+            elif self.gateway_ip and self.gateway_ip != target.ip and self.gateway_ip != "0.0.0.0":
+                # Fallback attempt to gateway_ip if target.ip failed
+                gw_endpoint = f"{self.gateway_ip}:{target.port}"
+                self.step_progress.emit(f"Retrying connection with gateway endpoint {gw_endpoint}...")
+                res_gw = subprocess.run([adb_bin, "connect", gw_endpoint], capture_output=True, text=True, timeout=5.0)
+                out_gw = res_gw.stdout + res_gw.stderr
+                if "connected to" in out_gw.lower():
+                    details = {
+                        "device_name": target.device_name,
+                        "model": target.model,
+                        "ip": self.gateway_ip,
+                        "port": target.port,
+                        "endpoint": gw_endpoint,
+                        "battery_level": target.battery,
+                    }
+                    self.endpoint_found.emit(gw_endpoint, details)
+                else:
+                    self.discovery_failed.emit(f"ADB Connect rejected: {out.strip()} / {out_gw.strip()}")
             else:
                 self.discovery_failed.emit(f"ADB Connect rejected: {out.strip()}")
         except Exception as e:

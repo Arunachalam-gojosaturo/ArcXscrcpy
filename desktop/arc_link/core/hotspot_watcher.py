@@ -269,11 +269,19 @@ class HotspotWatcher(QObject):
         if self.ssid_filter and not any(f.lower() in ssid.lower() for f in self.ssid_filter):
             return
 
+        is_new_or_changed = (
+            self.current_interface != iface
+            or self.current_gateway != gateway
+            or self.current_ssid != ssid
+        )
+
         self.current_interface = iface
         self.current_gateway = gateway
         self.current_ssid = ssid
         self.current_signal = signal
-        self.hotspot_connected.emit(iface, ssid, gateway)
+
+        if is_new_or_changed:
+            self.hotspot_connected.emit(iface, ssid, gateway)
 
     def _on_hotspot_lost(self, iface: str) -> None:
         self.current_interface = ""

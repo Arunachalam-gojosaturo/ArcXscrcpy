@@ -21,11 +21,12 @@ class TestKnockProtocol(unittest.TestCase):
             "hotspot": True,
             "battery": 88,
         }
-        reply = KnockReply.from_dict(data)
+        reply = KnockReply.from_dict(data, responder_ip="10.170.47.96")
         self.assertEqual(reply.device_name, "Pixel 7 Pro")
         self.assertEqual(reply.adb_port, 39451)
         self.assertTrue(reply.adb_wifi_enabled)
         self.assertEqual(reply.battery, 88)
+        self.assertEqual(reply.responder_ip, "10.170.47.96")
 
     def test_mock_udp_knock_exchange(self):
         server_sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)

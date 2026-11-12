@@ -100,7 +100,7 @@ class KnockListener(
                     }
 
                     // 4. Build JSON Response
-                    val responseJson = buildResponsePayload(hotspot, targetPort, adbController.isAdbWifiActive.value)
+                    val responseJson = buildResponsePayload(hotspot, targetPort, adbController.isAdbWifiActive.value, packet.address)
                     val responseBytes = responseJson.toString().toByteArray(Charsets.UTF_8)
                     val replyPacket = DatagramPacket(
                         responseBytes,
@@ -147,7 +147,12 @@ class KnockListener(
         return senderIp.startsWith("192.168.") || senderIp.startsWith("10.") || senderIp.startsWith("172.")
     }
 
-    private fun buildResponsePayload(hotspot: HotspotState, adbPort: Int, isAdbWifi: Boolean): JSONObject {
+    private fun buildResponsePayload(
+        hotspot: HotspotState,
+        adbPort: Int,
+        isAdbWifi: Boolean,
+        clientAddr: InetAddress? = null
+    ): JSONObject {
         val json = JSONObject()
 
         // Query device name from settings or build properties
@@ -157,15 +162,88 @@ class KnockListener(
             null
         } ?: Build.MODEL
 
+        val resolvedIp = resolveLocalIp(hotspot, clientAddr)
+
         json.put("device_name", devName)
         json.put("model", Build.MODEL)
-        json.put("ip", hotspot.ipAddress.ifEmpty { "192.168.43.1" })
+        json.put("ip", resolvedIp)
         json.put("adb_port", if (adbPort > 0) adbPort else 5555)
         json.put("adb_wifi_enabled", isAdbWifi)
         json.put("hotspot", hotspot.isEnabled)
         json.put("battery", queryBatteryLevel())
 
         return json
+    }
+
+    private fun resolveLocalIp(hotspot: HotspotState, clientAddr: InetAddress?): String {
+        // 1. If clientAddr is provided, look for the local interface matching client's subnet
+        if (clientAddr is java.net.Inet4Address) {
+            try {
+                val interfaces = java.net.NetworkInterface.getNetworkInterfaces()?.toList() ?: emptyList()
+                for (iface in interfaces) {
+                    if (!iface.isUp || iface.isLoopback) continue
+                    val ifaceName = iface.name.lowercase()
+                    if (ifaceName.startsWith("rmnet") || ifaceName.startsWith("dummy") || ifaceName.startsWith("lo") || ifaceName.startsWith("p2p")) continue
+
+                    for (ifaceAddr in iface.interfaceAddresses) {
+                        val addr = ifaceAddr.address
+                        if (addr is java.net.Inet4Address && !addr.isLoopbackAddress) {
+                            val prefixLen = ifaceAddr.networkPrefixLength.toInt()
+                            if (isSameSubnet(clientAddr.address, addr.address, prefixLen)) {
+                                val match = addr.hostAddress ?: ""
+                                if (match.isNotEmpty()) {
+                                    Log.i(TAG, "Resolved local IP $match on ${iface.name} matching client ${clientAddr.hostAddress}")
+                                    return match
+                                }
+                            }
+                        }
+                    }
+                }
+            } catch (e: Exception) {
+                Log.w(TAG, "Subnet matching failed: ${e.message}")
+            }
+        }
+
+        // 2. Use hotspot IP if resolved
+        if (hotspot.ipAddress.isNotEmpty()) {
+            return hotspot.ipAddress
+        }
+
+        // 3. Fallback: Any active non-cellular IPv4 address
+        try {
+            val interfaces = java.net.NetworkInterface.getNetworkInterfaces()?.toList() ?: emptyList()
+            for (iface in interfaces) {
+                if (!iface.isUp || iface.isLoopback) continue
+                val ifaceName = iface.name.lowercase()
+                if (ifaceName.startsWith("rmnet") || ifaceName.startsWith("dummy") || ifaceName.startsWith("lo") || ifaceName.startsWith("p2p")) continue
+                for (addr in iface.inetAddresses) {
+                    if (addr is java.net.Inet4Address && !addr.isLoopbackAddress) {
+                        val host = addr.hostAddress ?: ""
+                        if (host.isNotEmpty()) return host
+                    }
+                }
+            }
+        } catch (e: Exception) {
+            // ignore
+        }
+
+        return "192.168.43.1"
+    }
+
+    private fun isSameSubnet(ip1: ByteArray, ip2: ByteArray, prefixLen: Int): Boolean {
+        if (ip1.size != 4 || ip2.size != 4) return false
+        val fullBytes = prefixLen / 8
+        val remBits = prefixLen % 8
+        for (i in 0 until fullBytes) {
+            if (ip1[i] != ip2[i]) return false
+        }
+        if (remBits > 0 && fullBytes < 4) {
+            val mask = (0xFF shl (8 - remBits)) and 0xFF
+            if ((ip1[fullBytes].toInt() and mask) != (ip2[fullBytes].toInt() and mask)) {
+                return false
+            }
+        }
+        return true
     }
 
     private fun queryBatteryLevel(): Int {
